@@ -4,14 +4,21 @@
 
 	class CatalogueController {
 
+	private $container;
+
+		public function  __construct(\Slim\Container $c)
+		{
+			$this->container = $c;
+		}
 
 		public function getCategorie($req, $resp, $args) {
 
 			// ajoute ou remplace
-			$rs= $resp->withHeader( 'Content-type', "application/json;charset=utf-8") ;
+			$rs= $resp->withHeader( 'Content-type', "application/json;charset=utf-8");
 
-			$arr = array('type' => 'collection', 'meta' => [ 'count' => 3, 'locale' => 'fr-FR'], 'categorie' => [ ['id' => 1, 'nom' => 'tradi', 'desc' => "le sandwish classique"], ['id' => 2, 'nom' => 'bio', 'desc' => "le sandwish bio et local"], ['id' => 3, 'nom' => 'veggie', 'desc' => "le sandwish végétal"] ]);
+			$arr = new \lbs\models\Sandwich();
 
+			$arr = array('type' => 'collection', 'meta' => [ 'count' => 3, 'locale' => 'fr-FR'], 'categorie' => $arr->get());
 			$rs->getBody()->write(json_encode($arr));
 
 			return $rs;
@@ -20,13 +27,21 @@
 		public function getDesc($req, $resp, $args) {
 
 			// ajoute ou remplace
-			$rs= $resp->withHeader( 'Content-type', "application/json;charset=utf-8") ;
+			$rs= $resp->withHeader( 'Content-type', "application/json;charset=utf-8");
 
-			$arr = array('type' => 'collection', 'meta' => [ 'count' => 3, 'locale' => 'fr-FR'], 'categorie' => [ ['id' => 1, 'nom' => 'tradi', 'desc' => "le sandwish classique"], ['id' => 2, 'nom' => 'bio', 'desc' => "le sandwish bio et local"], ['id' => 3, 'nom' => 'veggie', 'desc' => "le sandwish végétal"] ]);
+			$arr = new \lbs\models\Sandwich();
 
-			$id = $args['id'];
-			$temp = array('type' => 'collection', 'meta' => ['locale' => 'fr-FR'], 'categorie' => $arr['categorie'][$id -1]);
+			try {
+				$arr = $arr->where('id', '=', $args['id'])->firstOrFail();
+				$temp = array('type' => 'collection', 'meta' => ['locale' => 'fr-FR'], 'categorie' => $arr);
+			}
+			catch(\Exception $e)
+			{
+				$url = $this->container['router']->pathFor('catid', [ 'id' => $args['id'] ]);
 
+				$temp = array("type" => "error", "error" => '404', "message" => "ressource non disponible : ".$url);
+			}
+			
 			$rs->getBody()->write(json_encode($temp));
 
 			return $rs;
